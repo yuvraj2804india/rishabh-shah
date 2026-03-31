@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080b12;
+  --surface: #0e1220;
+  --surface2: #141828;
+  --surface3: #1c2235;
+  --border: #1e2640;
+  --border2: #2a334f;
+  --text: #d6dff5;
+  --muted: #6b789a;
+  --faint: #2e3a55;
+  --accent: #3d6fff;
+  --accent-dim: #1a3380;
+
+  --invest: #22c97a;
+  --invest-bg: #061a10;
+  --invest-border: #0d3320;
+
+  --trade: #3d8eff;
+  --trade-bg: #061228;
+  --trade-border: #0d2460;
+
+  --avoid: #f5a623;
+  --avoid-bg: #1a1000;
+  --avoid-border: #3d2800;
+
+  --strict: #ff4d4d;
+  --strict-bg: #1a0606;
+  --strict-border: #3d0f0f;
+
+  --profit: #22c97a;
+  --loss: #ff4d4d;
+  --warn: #f5a623;
+  --open: #3d8eff;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* ─── LAYOUT ─── */
+.app { display: grid; grid-template-rows: auto 1fr; min-height: 100vh; }
+
+/* ─── TOPBAR ─── */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 58px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: .5px;
+  margin-right: 8px;
+}
+
+.logo-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--invest);
+  box-shadow: 0 0 8px var(--invest);
+  animation: pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:.5;transform:scale(.85)}
+}
+
+.divider { width: 1px; height: 22px; background: var(--border2); }
+
+.tabs { display: flex; gap: 4px; }
+
+.tab {
+  font-family: 'Syne', sans-serif;
+  padding: 7px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  transition: all .2s;
+  letter-spacing: .2px;
+}
+
+.tab.active {
+  background: var(--surface3);
+  color: var(--text);
+  border-color: var(--border2);
+}
+
+.tab:hover:not(.active) { color: var(--text); background: var(--surface2); }
+
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+.timestamp {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: .5px;
+}
+
+/* ─── PANELS ─── */
+.panel { display: none; padding: 28px; animation: fadeIn .25s ease; }
+.panel.active { display: block; }
+
+@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+/* ─── SECTOR TAB ─── */
+.sector-intro {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 20px;
+  letter-spacing: .4px;
+}
+
+.sector-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.sector-col {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+}
+
+.col-header {
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+}
+
+.col-header.invest { background: var(--invest-bg); color: var(--invest); border-bottom: 1px solid var(--invest-border); }
+.col-header.trade  { background: var(--trade-bg);  color: var(--trade);  border-bottom: 1px solid var(--trade-border); }
+.col-header.avoid  { background: var(--avoid-bg);  color: var(--avoid);  border-bottom: 1px solid var(--avoid-border); }
+.col-header.strict { background: var(--strict-bg); color: var(--strict); border-bottom: 1px solid var(--strict-border); }
+
+.col-indicator { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.col-indicator.invest { background: var(--invest); }
+.col-indicator.trade  { background: var(--trade); }
+.col-indicator.avoid  { background: var(--avoid); }
+.col-indicator.strict { background: var(--strict); }
+
+.col-count {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  opacity: .7;
+}
+
+.sector-list { flex: 1; padding: 10px; min-height: 140px; }
+
+.sector-tag {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text);
+  border: 1px solid transparent;
+  transition: all .15s;
+  margin-bottom: 3px;
+  cursor: default;
+}
+
+.sector-tag:hover { background: var(--surface2); border-color: var(--border2); }
+
+.sector-tag:hover .rm-btn { opacity: 1; }
+
+.rm-btn {
+  opacity: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--loss);
+  font-family: inherit;
+  padding: 1px 5px;
+  border-radius: 3px;
+  transition: all .15s;
+  line-height: 1;
+}
+
+.rm-btn:hover { background: var(--strict-bg); }
+
+.col-empty {
+  font-size: 11px;
+  color: var(--faint);
+  text-align: center;
+  padding: 24px 0;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: .3px;
+}
+
+.add-row {
+  padding: 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+}
+
+.add-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 12px;
+  color: var(--text);
+  outline: none;
+  font-family: 'Syne', sans-serif;
+  transition: border .15s;
+}
+
+.add-input:focus { border-color: var(--accent); }
+.add-input::placeholder { color: var(--faint); }
+
+.add-btn {
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: 'Syne', sans-serif;
+  letter-spacing: .2px;
+}
+
+.add-btn.invest { background: var(--invest-border); color: var(--invest); border: 1px solid var(--invest-border); }
+.add-btn.trade  { background: var(--trade-border);  color: var(--trade);  border: 1px solid var(--trade-border); }
+.add-btn.avoid  { background: var(--avoid-border);  color: var(--avoid);  border: 1px solid var(--avoid-border); }
+.add-btn.strict { background: var(--strict-border); color: var(--strict); border: 1px solid var(--strict-border); }
+.add-btn:hover { filter: brightness(1.4); }
+
+/* ─── TRADE TAB ─── */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  transition: border-color .2s;
+}
+
+.stat-card:hover { border-color: var(--border2); }
+
+.stat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  margin-bottom: 8px;
+}
+
+.stat-val {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -.5px;
+}
+
+.stat-val.profit { color: var(--profit); }
+.stat-val.loss   { color: var(--loss); }
+.stat-val.warn   { color: var(--warn); }
+.stat-val.info   { color: var(--trade); }
+
+/* ─── FORM ─── */
+.form-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 22px;
+}
+
+.form-section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.form-grid { display: grid; gap: 12px; margin-bottom: 12px; }
+.g4 { grid-template-columns: repeat(4, 1fr); }
+.g5 { grid-template-columns: repeat(5, 1fr); }
+.g3 { grid-template-columns: 2.5fr 1fr 1fr; }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+
+.field label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.field input, .field select {
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  padding: 9px 11px;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  font-family: 'Syne', sans-serif;
+  transition: border .15s, box-shadow .15s;
+  width: 100%;
+  -webkit-appearance: none;
+}
+
+.field input:focus, .field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(61,111,255,.12);
+}
+
+.field input::placeholder { color: var(--faint); }
+.field select option { background: var(--surface2); }
+
+.sector-check {
+  min-height: 26px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: .3px;
+}
+
+.badge.invest { background: var(--invest-bg);  color: var(--invest); border: 1px solid var(--invest-border); }
+.badge.trade  { background: var(--trade-bg);   color: var(--trade);  border: 1px solid var(--trade-border); }
+.badge.avoid  { background: var(--avoid-bg);   color: var(--avoid);  border: 1px solid var(--avoid-border); }
+.badge.strict { background: var(--strict-bg);  color: var(--strict); border: 1px solid var(--strict-border); }
+.badge.unknown{ background: var(--surface3);   color: var(--muted);  border: 1px solid var(--border2); }
+
+.submit-btn {
+  width: 100%;
+  padding: 11px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  color: #93b4ff;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  font-family: 'Syne', sans-serif;
+  letter-spacing: .3px;
+}
+
+.submit-btn:hover { background: var(--accent); color: #fff; box-shadow: 0 0 20px rgba(61,111,255,.3); }
+
+/* ─── TABLE ─── */
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table-topbar {
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.table-topbar-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+}
+
+.filter-input {
+  margin-left: auto;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--text);
+  outline: none;
+  font-family: 'Syne', sans-serif;
+  width: 200px;
+  transition: border .15s;
+}
+
+.filter-input:focus { border-color: var(--accent); }
+.filter-input::placeholder { color: var(--faint); }
+
+.table-scroll { overflow-x: auto; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+
+th {
+  padding: 10px 14px;
+  text-align: left;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  background: var(--surface2);
+  position: sticky;
+  top: 0;
+}
+
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  white-space: nowrap;
+  vertical-align: middle;
+  font-size: 12px;
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+
+.pnl-pos { color: var(--profit); font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+.pnl-neg { color: var(--loss);   font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+.dir-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: .3px;
+}
+
+.dir-long  { background: var(--invest-bg); color: var(--invest); border: 1px solid var(--invest-border); }
+.dir-short { background: var(--avoid-bg);  color: var(--avoid);  border: 1px solid var(--avoid-border); }
+
+.status-open   { color: var(--trade); font-size: 10px; font-family: 'JetBrains Mono', monospace; letter-spacing: .3px; }
+.status-closed { color: var(--muted); font-size: 10px; font-family: 'JetBrains Mono', monospace; }
+
+.del-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--faint);
+  font-size: 13px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  transition: all .15s;
+  font-family: inherit;
+}
+
+.del-btn:hover { color: var(--loss); background: var(--strict-bg); }
+
+.empty-state {
+  text-align: center;
+  padding: 48px;
+  color: var(--faint);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: .5px;
+}
+
+.note-cell {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1200px) {
+  .sector-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-row { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .g4, .g5 { grid-template-columns: repeat(2, 1fr); }
+  .g3 { grid-template-columns: 1fr; }
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      PORTFOLIO · DASHBOARD
+    </div>
+    <div class="divider"></div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('sectors')">Sector Classification</button>
+      <button class="tab" onclick="switchTab('trades')">Trade Log</button>
+    </div>
+    <div class="topbar-right">
+      <div class="timestamp" id="clock"></div>
+    </div>
+  </div>
+
+  <!-- SECTORS PANEL -->
+  <div id="sectors" class="panel active">
+    <div class="sector-intro">// Define your sector classifications below. These will be used to validate trades in the log.</div>
+
+    <div class="sector-grid">
+
+      <!-- INVESTABLE -->
+      <div class="sector-col">
+        <div class="col-header invest">
+          <span class="col-indicator invest"></span>
+          Investable
+          <span class="col-count" id="cnt-invest">0</span>
+        </div>
+        <div class="sector-list" id="list-invest"></div>
+        <div class="add-row">
+          <input class="add-input" id="inp-invest" placeholder="Add sector..." onkeydown="if(event.key==='Enter')addSector('invest')">
+          <button class="add-btn invest" onclick="addSector('invest')">+ Add</button>
+        </div>
+      </div>
+
+      <!-- TRADABLE -->
+      <div class="sector-col">
+        <div class="col-header trade">
+          <span class="col-indicator trade"></span>
+          Tradable
+          <span class="col-count" id="cnt-trade">0</span>
+        </div>
+        <div class="sector-list" id="list-trade"></div>
+        <div class="add-row">
+          <input class="add-input" id="inp-trade" placeholder="Add sector..." onkeydown="if(event.key==='Enter')addSector('trade')">
+          <button class="add-btn trade" onclick="addSector('trade')">+ Add</button>
+        </div>
+      </div>
+
+      <!-- AVOIDABLE -->
+      <div class="sector-col">
+        <div class="col-header avoid">
+          <span class="col-indicator avoid"></span>
+          Avoidable
+          <span class="col-count" id="cnt-avoid">0</span>
+        </div>
+        <div class="sector-list" id="list-avoid"></div>
+        <div class="add-row">
+          <input class="add-input" id="inp-avoid" placeholder="Add sector..." onkeydown="if(event.key==='Enter')addSector('avoid')">
+          <button class="add-btn avoid" onclick="addSector('avoid')">+ Add</button>
+        </div>
+      </div>
+
+      <!-- STRICTLY AVOIDED -->
+      <div class="sector-col">
+        <div class="col-header strict">
+          <span class="col-indicator strict"></span>
+          Strictly Avoided
+          <span class="col-count" id="cnt-strict">0</span>
+        </div>
+        <div class="sector-list" id="list-strict"></div>
+        <div class="add-row">
+          <input class="add-input" id="inp-strict" placeholder="Add sector..." onkeydown="if(event.key==='Enter')addSector('strict')">
+          <button class="add-btn strict" onclick="addSector('strict')">+ Add</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TRADE LOG PANEL -->
+  <div id="trades" class="panel">
+
+    <!-- STAT CARDS -->
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-label">Total Scrips</div>
+        <div class="stat-val" id="st-total">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Open Positions</div>
+        <div class="stat-val info" id="st-open">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Gross P&amp;L</div>
+        <div class="stat-val" id="st-pnl">₹0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Net P&amp;L (after costs)</div>
+        <div class="stat-val" id="st-net">₹0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Costs</div>
+        <div class="stat-val warn" id="st-costs">₹0</div>
+      </div>
+    </div>
+
+    <!-- ADD TRADE FORM -->
+    <div class="form-card">
+      <div class="form-section-label">Log new trade</div>
+
+      <div class="form-grid g4">
+        <div class="field"><label>Scrip Name</label><input id="f-scrip" placeholder="e.g. RELIANCE"></div>
+        <div class="field"><label>Sector</label><input id="f-sector" placeholder="e.g. Energy" oninput="checkSector()"></div>
+        <div class="field"><label>Buy Date</label><input id="f-bdate" type="date"></div>
+        <div class="field"><label>Exit Date</label><input id="f-edate" type="date"></div>
+      </div>
+
+      <div class="form-grid g5">
+        <div class="field"><label>Quantity</label><input id="f-qty" type="number" min="0" placeholder="100"></div>
+        <div class="field"><label>Buy Price (₹)</label><input id="f-buy" type="number" min="0" placeholder="2400"></div>
+        <div class="field"><label>Current / Exit Price (₹)</label><input id="f-cur" type="number" min="0" placeholder="2500"></div>
+        <div class="field"><label>Brokerage (₹)</label><input id="f-brok" type="number" min="0" placeholder="50"></div>
+        <div class="field"><label>Charges / STT (₹)</label><input id="f-charges" type="number" min="0" placeholder="20"></div>
+      </div>
+
+      <div class="form-grid g3">
+        <div class="field"><label>Notes / Remarks</label><input id="f-notes" placeholder="e.g. Breakout trade, sector tailwind..."></div>
+        <div class="field">
+          <label>Trade Type</label>
+          <select id="f-type">
+            <option value="delivery">Delivery</option>
+            <option value="swing">Swing</option>
+            <option value="positional">Positional</option>
+            <option value="intraday">Intraday</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Direction</label>
+          <select id="f-dir">
+            <option value="long">Long</option>
+            <option value="short">Short</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sector-check" id="sector-check"></div>
+
+      <button class="submit-btn" onclick="addTrade()">+ Log Trade</button>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-card">
+      <div class="table-topbar">
+        <span class="table-topbar-title">Portfolio Log</span>
+        <span class="mono" style="font-size:11px;color:var(--muted)" id="trade-count">0 entries</span>
+        <input class="filter-input" id="filter-input" placeholder="Filter by scrip or sector..." oninput="renderTrades()">
+      </div>
+      <div class="table-scroll">
+        <div id="trade-body"></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// ─── STATE ───
+let sectors = { invest:[], trade:[], avoid:[], strict:[] };
+let trades   = [];
+
+try { const s = localStorage.getItem('pd_sectors'); if(s) sectors = JSON.parse(s); } catch(e){}
+try { const t = localStorage.getItem('pd_trades');  if(t) trades  = JSON.parse(t); } catch(e){}
+
+function persist() {
+  try { localStorage.setItem('pd_sectors', JSON.stringify(sectors)); } catch(e){}
+  try { localStorage.setItem('pd_trades',  JSON.stringify(trades));  } catch(e){}
+}
+
+// ─── CLOCK ───
+function tick() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) + '  ' +
+    now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+}
+tick(); setInterval(tick, 1000);
+
+// ─── TABS ───
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((b,i) => b.classList.toggle('active', ['sectors','trades'][i] === t));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(t).classList.add('active');
+  if(t === 'trades') renderTrades();
+}
+
+// ─── SECTOR HELPERS ───
+function getSectorStatus(name) {
+  if(!name) return null;
+  const n = name.toLowerCase();
+  for(const cat of ['invest','trade','avoid','strict']) {
+    if(sectors[cat].some(s => s.toLowerCase().includes(n) || n.includes(s.toLowerCase()))) return cat;
+  }
+  return 'unknown';
+}
+
+const statusLabel = { invest:'Investable', trade:'Tradable', avoid:'Avoidable', strict:'Strictly Avoided', unknown:'Unclassified' };
+const statusDesc  = {
+  invest:  'Cleared for long-term investment.',
+  trade:   'Approved for short-term trading only.',
+  avoid:   'Should generally be avoided.',
+  strict:  'Strictly off-limits for this client.',
+  unknown: 'Not found in any classification list.'
+};
+
+// ─── SECTOR RENDERING ───
+function renderSectors() {
+  ['invest','trade','avoid','strict'].forEach(cat => {
+    const el = document.getElementById('list-' + cat);
+    const cnt = document.getElementById('cnt-' + cat);
+    cnt.textContent = sectors[cat].length;
+    el.innerHTML = '';
+    if(!sectors[cat].length) {
+      el.innerHTML = '<div class="col-empty">// empty</div>';
+      return;
+    }
+    sectors[cat].forEach((s, i) => {
+      const d = document.createElement('div');
+      d.className = 'sector-tag';
+      d.innerHTML = `<span style="font-size:13px">${s}</span><button class="rm-btn" onclick="removeSector('${cat}',${i})">✕</button>`;
+      el.appendChild(d);
+    });
+  });
+}
+
+function addSector(cat) {
+  const inp = document.getElementById('inp-' + cat);
+  const val = inp.value.trim();
+  if(!val) return;
+  if(sectors[cat].map(s=>s.toLowerCase()).includes(val.toLowerCase())) { inp.value=''; return; }
+  sectors[cat].push(val);
+  inp.value = '';
+  persist();
+  renderSectors();
+}
+
+function removeSector(cat, i) {
+  sectors[cat].splice(i, 1);
+  persist();
+  renderSectors();
+}
+
+// ─── SECTOR LIVE CHECK ───
+function checkSector() {
+  const val = document.getElementById('f-sector').value.trim();
+  const el  = document.getElementById('sector-check');
+  if(!val) { el.innerHTML = ''; return; }
+  const st = getSectorStatus(val);
+  el.innerHTML = `<span class="badge ${st}">${statusLabel[st]}</span><span style="color:var(--muted)">${statusDesc[st]}</span>`;
+}
+
+// ─── ADD TRADE ───
+function addTrade() {
+  const scrip   = document.getElementById('f-scrip').value.trim();
+  const sector  = document.getElementById('f-sector').value.trim();
+  const qty     = parseFloat(document.getElementById('f-qty').value)     || 0;
+  const buy     = parseFloat(document.getElementById('f-buy').value)     || 0;
+  const cur     = parseFloat(document.getElementById('f-cur').value)     || 0;
+  const brok    = parseFloat(document.getElementById('f-brok').value)    || 0;
+  const charges = parseFloat(document.getElementById('f-charges').value) || 0;
+  const bdate   = document.getElementById('f-bdate').value;
+  const edate   = document.getElementById('f-edate').value;
+  const notes   = document.getElementById('f-notes').value.trim();
+  const type    = document.getElementById('f-type').value;
+  const dir     = document.getElementById('f-dir').value;
+
+  if(!scrip || !qty || !buy) { alert('Scrip name, quantity, and buy price are required.'); return; }
+
+  trades.unshift({ id: Date.now(), scrip, sector, qty, buy, cur, brok, charges, bdate, edate, notes, type, dir, sectorStatus: getSectorStatus(sector) });
+  persist();
+
+  ['f-scrip','f-sector','f-qty','f-buy','f-cur','f-brok','f-charges','f-bdate','f-edate','f-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('sector-check').innerHTML = '';
+
+  renderTrades();
+  switchTab('trades');
+}
+
+function removeTrade(id) {
+  trades = trades.filter(t => t.id !== id);
+  persist();
+  renderTrades();
+}
+
+// ─── FORMAT HELPERS ───
+function inr(n) { return '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN'); }
+function sign(n) { return n >= 0 ? '+' : '−'; }
+
+// ─── RENDER TRADES ───
+function renderTrades() {
+  const body    = document.getElementById('trade-body');
+  const filter  = (document.getElementById('filter-input').value || '').toLowerCase();
+  const typeMap = { delivery:'Delivery', swing:'Swing', positional:'Positional', intraday:'Intraday' };
+
+  const filtered = trades.filter(t =>
+    !filter ||
+    t.scrip.toLowerCase().includes(filter) ||
+    (t.sector && t.sector.toLowerCase().includes(filter))
+  );
+
+  let totalGross = 0, totalNet = 0, totalCosts = 0, openCount = 0;
+
+  // Always compute stats from ALL trades, not filtered
+  trades.forEach(t => {
+    const dir  = t.dir || 'long';
+    const pnl  = t.cur ? (dir === 'short' ? t.buy - t.cur : t.cur - t.buy) * t.qty : 0;
+    const cost = (t.brok || 0) + (t.charges || 0);
+    totalGross += pnl;
+    totalCosts += cost;
+    totalNet   += (pnl - cost);
+    if(!t.edate) openCount++;
+  });
+
+  document.getElementById('st-total').textContent  = trades.length;
+  document.getElementById('st-open').textContent   = openCount;
+
+  const pnlEl = document.getElementById('st-pnl');
+  pnlEl.textContent = (totalGross >= 0 ? '+' : '−') + inr(totalGross);
+  pnlEl.className   = 'stat-val ' + (totalGross > 0 ? 'profit' : totalGross < 0 ? 'loss' : '');
+
+  const netEl = document.getElementById('st-net');
+  netEl.textContent = (totalNet >= 0 ? '+' : '−') + inr(totalNet);
+  netEl.className   = 'stat-val ' + (totalNet > 0 ? 'profit' : totalNet < 0 ? 'loss' : '');
+
+  document.getElementById('st-costs').textContent = inr(totalCosts);
+  document.getElementById('trade-count').textContent = filtered.length + ' entr' + (filtered.length === 1 ? 'y' : 'ies');
+
+  if(!filtered.length) {
+    body.innerHTML = `<div class="empty-state">// ${filter ? 'no matching trades' : 'no trades logged yet'}</div>`;
+    return;
+  }
+
+  let html = `<table>
+    <thead><tr>
+      <th>Scrip</th>
+      <th>Type</th>
+      <th>Dir</th>
+      <th>Sector</th>
+      <th>Classification</th>
+      <th>Qty</th>
+      <th>Buy ₹</th>
+      <th>CMP ₹</th>
+      <th>Gross P&L</th>
+      <th>P&L %</th>
+      <th>Brokerage</th>
+      <th>Charges</th>
+      <th>Net P&L</th>
+      <th>Buy Date</th>
+      <th>Exit</th>
+      <th>Notes</th>
+      <th></th>
+    </tr></thead><tbody>`;
+
+  filtered.forEach(t => {
+    const dir     = t.dir || 'long';
+    const rawPnl  = t.cur ? (dir === 'short' ? t.buy - t.cur : t.cur - t.buy) * t.qty : null;
+    const cost    = (t.brok || 0) + (t.charges || 0);
+    const netPnl  = rawPnl !== null ? rawPnl - cost : null;
+    const pct     = rawPnl !== null && t.buy ? ((dir === 'short' ? t.buy - t.cur : t.cur - t.buy) / t.buy * 100) : null;
+    const gc      = rawPnl !== null ? (rawPnl > 0 ? 'pnl-pos' : rawPnl < 0 ? 'pnl-neg' : '') : '';
+    const nc      = netPnl !== null ? (netPnl > 0 ? 'pnl-pos' : netPnl < 0 ? 'pnl-neg' : '') : '';
+    const st      = t.sectorStatus || 'unknown';
+
+    html += `<tr>
+      <td style="font-weight:600;letter-spacing:.3px">${t.scrip}</td>
+      <td class="mono" style="font-size:10px;color:var(--muted)">${typeMap[t.type] || t.type || '-'}</td>
+      <td><span class="dir-badge dir-${dir}">${dir.toUpperCase()}</span></td>
+      <td style="color:var(--muted)">${t.sector || '-'}</td>
+      <td><span class="badge ${st}">${statusLabel[st]}</span></td>
+      <td class="mono">${t.qty.toLocaleString('en-IN')}</td>
+      <td class="mono">₹${t.buy.toLocaleString('en-IN')}</td>
+      <td class="mono">${t.cur ? '₹'+t.cur.toLocaleString('en-IN') : '—'}</td>
+      <td class="${gc} mono">${rawPnl !== null ? sign(rawPnl)+inr(rawPnl) : '—'}</td>
+      <td class="${gc} mono">${pct !== null ? (pct>=0?'+':'-')+Math.abs(pct).toFixed(2)+'%' : '—'}</td>
+      <td class="mono" style="color:var(--muted)">${t.brok ? '₹'+t.brok : '—'}</td>
+      <td class="mono" style="color:var(--muted)">${t.charges ? '₹'+t.charges : '—'}</td>
+      <td class="${nc} mono">${netPnl !== null ? sign(netPnl)+inr(netPnl) : '—'}</td>
+      <td class="mono" style="color:var(--muted);font-size:11px">${t.bdate || '—'}</td>
+      <td>${t.edate ? '<span class="status-closed">'+t.edate+'</span>' : '<span class="status-open">● OPEN</span>'}</td>
+      <td class="note-cell" title="${t.notes || ''}">${t.notes || '—'}</td>
+      <td><button class="del-btn" onclick="removeTrade(${t.id})">✕</button></td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  body.innerHTML = html;
+}
+
+// ─── INIT ───
+renderSectors();
+renderTrades();
+</script>
+</body>
+</html>
